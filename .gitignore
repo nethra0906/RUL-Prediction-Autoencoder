@@ -1,0 +1,29 @@
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.python-version
+
+# --- Notebooks ---
+.ipynb_checkpoints/
+
+# --- Env / secrets ---
+.env
+.env.*
+
+# --- OS / editor ---
+.DS_Store
+.vscode/
+.idea/
+
+# --- pytest / coverage ---
+.pytest_cache/
+.coverage
+htmlcov/

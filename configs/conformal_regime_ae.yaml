@@ -1,0 +1,11 @@
+# Overrides for the proposed system — regime-conditioned AE + conformal-calibrated dynamic threshold.
+# NOT required for the 5 Sep checkpoint (see AI_CONTEXT.md Section 26); scaffold only.
+model:
+  type: regime_conditioned_autoencoder
+  regime_encoder:
+    mechanism: concatenation   # concatenation | film
+threshold:
+  method: conformal
+  conformal:
+    calibration_frac: 0.15
+    target_coverage: 0.95

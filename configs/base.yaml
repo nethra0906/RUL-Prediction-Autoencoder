@@ -1,0 +1,54 @@
+# Base configuration template.
+# Values here are EXAMPLES ONLY (see AI_CONTEXT.md, Section 20).
+# Every real experiment must log its actual config — do not treat these as defaults to trust blindly.
+
+dataset:
+  name: CMAPSS
+  subset: FD001
+  raw_dir: data/raw/CMAPSS
+  interim_dir: data/interim
+  processed_dir: data/processed
+
+features:
+  settings:
+    - setting_1
+    - setting_2
+    - setting_3
+  sensors:
+    all: true
+
+split:
+  method: engine_level
+  train_frac: 0.7
+  val_frac: 0.15
+  test_frac: 0.15
+  seed: 42
+
+healthy_region:
+  definition: first_k_cycles   # must be documented/configurable, see Section 5.3
+  k: 30
+
+window:
+  size: 30
+  stride: 1
+
+normalization:
+  method: per_condition_zscore # Akriti's Day 3 planned initial approach
+
+model:
+  type: baseline_autoencoder    # baseline_autoencoder | regime_conditioned_autoencoder
+  latent_dim: 16
+
+training:
+  epochs: 100
+  batch_size: 128
+  learning_rate: 0.001
+  seed: 42
+  early_stopping: true
+
+threshold:
+  method: fixed   # fixed | dynamic | conformal
+
+logging:
+  experiment_tracking_dir: experiments/
+  results_dir: results/

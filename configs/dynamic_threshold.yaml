@@ -1,0 +1,8 @@
+# Overrides for Experiment C — dynamic-threshold precursor (percentile or rolling-std based).
+model:
+  type: baseline_autoencoder
+threshold:
+  method: dynamic
+  dynamic:
+    strategy: rolling_percentile   # rolling_percentile | rolling_mean_std
+    percentile: 95

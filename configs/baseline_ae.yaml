@@ -1,0 +1,5 @@
+# Overrides for Experiment B — vanilla autoencoder, fixed threshold (the "before" baseline).
+model:
+  type: baseline_autoencoder
+threshold:
+  method: fixed
