@@ -17,16 +17,16 @@ features:
   sensors:
     all: true
 
+# The official C-MAPSS test_FDx.txt + RUL_FDx.txt files serve as the held-out
+# test set as-is. This is a train/val split over the training-file engines only.
 split:
   method: engine_level
-  train_frac: 0.7
   val_frac: 0.15
-  test_frac: 0.15
   seed: 42
 
 healthy_region:
-  definition: first_k_cycles   # must be documented/configurable, see Section 5.3
-  k: 30
+  definition: fraction_of_life   # see Section 5.3; matches arXiv 2601.10269's 85/15 split
+  healthy_frac: 0.85
 
 window:
   size: 30
