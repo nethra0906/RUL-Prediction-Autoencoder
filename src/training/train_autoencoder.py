@@ -49,6 +49,8 @@ def train_autoencoder(
     learning_rate: float,
     seed: int,
     early_stopping_patience: int | None = 10,
+    train_settings: torch.Tensor | None = None,
+    val_settings: torch.Tensor | None = None,
 ) -> tuple[nn.Module, TrainingHistory]:
     """Train an autoencoder on healthy-cycle windows via reconstruction MSE.
 
@@ -94,10 +96,34 @@ def train_autoencoder(
         raise ValueError("train_X must be non-empty")
     if val_X.shape[0] == 0:
         raise ValueError("val_X must be non-empty")
+    if (train_settings is None) != (val_settings is None):
+        raise ValueError(
+            "train_settings and val_settings must either both be provided or both be None"
+        )
+
+    if train_settings is not None:
+        if train_settings.shape[0] != train_X.shape[0]:
+            raise ValueError(
+                "train_settings must have the same number of samples as train_X"
+            )
+
+        if val_settings.shape[0] != val_X.shape[0]:
+            raise ValueError(
+                "val_settings must have the same number of samples as val_X"
+            )
 
     set_seed(seed)
 
-    train_loader = DataLoader(TensorDataset(train_X), batch_size=batch_size, shuffle=True)
+    if train_settings is None:
+        train_dataset = TensorDataset(train_X)
+    else:
+        train_dataset = TensorDataset(train_X, train_settings)
+
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+    )
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     loss_fn = nn.MSELoss()
 
@@ -109,9 +135,16 @@ def train_autoencoder(
     for epoch in range(epochs):
         model.train()
         train_loss_sum, train_n = 0.0, 0
-        for (batch_x,) in train_loader:
+        for batch in train_loader:
             optimizer.zero_grad()
-            recon, _ = model(batch_x)
+
+            if train_settings is None:
+                batch_x = batch[0]
+                recon, _ = model(batch_x)
+            else:
+                batch_x, batch_settings = batch
+                recon, _ = model(batch_x, batch_settings)
+
             loss = loss_fn(recon, batch_x)
             loss.backward()
             optimizer.step()
@@ -121,7 +154,11 @@ def train_autoencoder(
 
         model.eval()
         with torch.no_grad():
-            val_recon, _ = model(val_X)
+            if val_settings is None:
+                val_recon, _ = model(val_X)
+            else:
+                val_recon, _ = model(val_X, val_settings)
+
             val_loss = loss_fn(val_recon, val_X).item()
 
         history.train_losses.append(train_loss)

@@ -1,0 +1,50 @@
+{
+  "experiment_id": "fd001_ae_dynamic_v001",
+  "timestamp": "2026-09-01T17:20:44.498374+00:00",
+  "dataset": "FD001",
+  "split": {
+    "val_frac": 0.15,
+    "seed": 42
+  },
+  "healthy_region": {
+    "healthy_frac": 0.85
+  },
+  "window": {
+    "size": 30,
+    "stride": 1
+  },
+  "model": {
+    "type": "baseline_autoencoder",
+    "latent_dim": 16,
+    "hidden_dims": [
+      64,
+      32
+    ]
+  },
+  "training": {
+    "epochs": 2,
+    "batch_size": 128,
+    "learning_rate": 0.001,
+    "seed": 42,
+    "early_stopping_patience": 10
+  },
+  "threshold": {
+    "method": "dynamic",
+    "window_size": 30,
+    "lambda": 2.5
+  },
+  "evaluation": {
+    "persistence": 1
+  },
+  "n_train_windows": 12619,
+  "n_val_windows": 1967,
+  "final_train_loss": 0.3336658929104529,
+  "final_val_loss": 0.33553099632263184,
+  "best_epoch": 1,
+  "stopped_early": false,
+  "val_alert_rate": 0.0315200813421454,
+  "val_threshold_mean": 0.3998641853958631,
+  "val_threshold_min": 0.28092695043629573,
+  "val_threshold_max": 0.6596901452842788,
+  "checkpoint_path": "results\\checkpoints\\fd001_ae_dynamic_v001.pt"
+}
