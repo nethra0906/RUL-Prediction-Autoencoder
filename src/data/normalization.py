@@ -1,11 +1,14 @@
-"""Fit/transform normalization, fit on training data only.
+"""Normalization utilities for CMAPSS preprocessing.
 
-See AI_CONTEXT.md Section 19 (`data/normalization.py` module contract)
-and Section 17 Rule 2 (fit scaler on training data only, transform
-validation/test — never fit on data outside the allowed split).
+Supports:
+1. Global z-score normalization.
+2. Regime-aware z-score normalization.
 
-
+Regime-aware normalization computes feature statistics separately
+for each operating regime. The statistics are always fitted on
+training data only and reused unchanged for validation/test data.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -17,85 +20,197 @@ import pandas as pd
 
 @dataclass(frozen=True)
 class NormalizationStats:
-    """Per-feature mean/std fitted on training data.
-
-    Attributes:
-        feature_cols: Column names these stats apply to, in order.
-        mean: Per-feature mean, shape (len(feature_cols),).
-        std: Per-feature std, shape (len(feature_cols),). Any zero
-            entries are replaced with 1.0 at fit time (see
-            `fit_normalizer`) to avoid division by zero for constant
-            sensors (AI_CONTEXT.md notes some sensors are
-            near-constant, e.g. sensors 1, 5, 10, 16, 18, 19 per the
-            closest prior-art paper's EDA).
-    """
+    """Global per-feature normalization statistics."""
 
     feature_cols: tuple[str, ...]
     mean: np.ndarray
     std: np.ndarray
 
 
-def fit_normalizer(train_df: pd.DataFrame, feature_cols: Sequence[str]) -> NormalizationStats:
-    """Fit per-feature mean/std on training data only.
+@dataclass(frozen=True)
+class RegimeNormalizationStats:
+    """Per-feature normalization statistics for each operating regime."""
 
-    Args:
-        train_df: Training DataFrame (or a healthy-region subset of
-            it — see `data/healthy_region.py`) containing every column
-            in `feature_cols`. Must never be validation or test data
-            (AI_CONTEXT.md Section 17 Rule 2).
-        feature_cols: Columns to compute normalization statistics for,
-            in order (typically settings + sensors from
-            `data/schema.py`).
+    feature_cols: tuple[str, ...]
+    regime_col: str
+    regimes: tuple[int, ...]
+    means: dict[int, np.ndarray]
+    stds: dict[int, np.ndarray]
 
-    Returns:
-        A `NormalizationStats` instance to be passed to `transform`.
 
-    Raises:
-        ValueError: If `train_df` is empty or any `feature_cols` entry
-            is missing from it.
-    """
+def fit_normalizer(
+    train_df: pd.DataFrame,
+    feature_cols: Sequence[str],
+) -> NormalizationStats:
+    """Fit global per-feature z-score statistics on training data only."""
+
     feature_cols = list(feature_cols)
+
     missing = set(feature_cols) - set(train_df.columns)
     if missing:
-        raise ValueError(f"train_df is missing required column(s): {sorted(missing)}")
+        raise ValueError(
+            f"train_df is missing required column(s): {sorted(missing)}"
+        )
+
     if len(train_df) == 0:
         raise ValueError("train_df must be non-empty")
 
     values = train_df[feature_cols].to_numpy(dtype=float)
+
     mean = values.mean(axis=0)
     std = values.std(axis=0)
-    std_safe = np.where(std == 0.0, 1.0, std)  # avoid div-by-zero on constant sensors
 
-    return NormalizationStats(feature_cols=tuple(feature_cols), mean=mean, std=std_safe)
+    std_safe = np.where(std == 0.0, 1.0, std)
+
+    return NormalizationStats(
+        feature_cols=tuple(feature_cols),
+        mean=mean,
+        std=std_safe,
+    )
 
 
-def transform(df: pd.DataFrame, stats: NormalizationStats) -> pd.DataFrame:
-    """Apply previously-fitted normalization stats to a DataFrame.
+def transform(
+    df: pd.DataFrame,
+    stats: NormalizationStats,
+) -> pd.DataFrame:
+    """Apply previously fitted global normalization statistics."""
 
-    Args:
-        df: DataFrame containing every column in `stats.feature_cols`
-            (train, validation, or test — the same fitted `stats`
-            object is reused across all three, per AI_CONTEXT.md
-            Section 17 Rule 2).
-        stats: Output of `fit_normalizer`.
-
-    Returns:
-        A copy of `df` with `stats.feature_cols` replaced by their
-        z-scored values. Other columns are left untouched.
-
-    Raises:
-        ValueError: If any `stats.feature_cols` entry is missing from
-            `df`.
-    """
     missing = set(stats.feature_cols) - set(df.columns)
     if missing:
-        raise ValueError(f"df is missing required column(s): {sorted(missing)}")
+        raise ValueError(
+            f"df is missing required column(s): {sorted(missing)}"
+        )
 
     result = df.copy()
+
     values = result[list(stats.feature_cols)].to_numpy(dtype=float)
     normalized = (values - stats.mean) / stats.std
+
     result[list(stats.feature_cols)] = normalized
+
     return result
 
 
-__all__ = ["NormalizationStats", "fit_normalizer", "transform"]
+def fit_regime_normalizer(
+    train_df: pd.DataFrame,
+    feature_cols: Sequence[str],
+    regime_col: str = "operating_regime",
+) -> RegimeNormalizationStats:
+    """Fit per-regime z-score statistics on training data only.
+
+    Each operating regime receives its own mean and standard deviation
+    for every feature.
+
+    The DataFrame must already contain operating-regime labels produced
+    by a regime model fitted on training data.
+    """
+
+    feature_cols = list(feature_cols)
+
+    required = set(feature_cols) | {regime_col}
+    missing = required - set(train_df.columns)
+
+    if missing:
+        raise ValueError(
+            f"train_df is missing required column(s): {sorted(missing)}"
+        )
+
+    if len(train_df) == 0:
+        raise ValueError("train_df must be non-empty")
+
+    regimes = tuple(
+        sorted(
+            int(x)
+            for x in train_df[regime_col].dropna().unique()
+        )
+    )
+
+    if not regimes:
+        raise ValueError("train_df contains no operating regimes")
+
+    means: dict[int, np.ndarray] = {}
+    stds: dict[int, np.ndarray] = {}
+
+    for regime in regimes:
+        regime_df = train_df[train_df[regime_col] == regime]
+
+        if len(regime_df) == 0:
+            raise ValueError(
+                f"No training rows found for regime {regime}"
+            )
+
+        values = regime_df[feature_cols].to_numpy(dtype=float)
+
+        mean = values.mean(axis=0)
+        std = values.std(axis=0)
+
+        std_safe = np.where(std == 0.0, 1.0, std)
+
+        means[regime] = mean
+        stds[regime] = std_safe
+
+    return RegimeNormalizationStats(
+        feature_cols=tuple(feature_cols),
+        regime_col=regime_col,
+        regimes=regimes,
+        means=means,
+        stds=stds,
+    )
+
+
+def transform_by_regime(
+    df: pd.DataFrame,
+    stats: RegimeNormalizationStats,
+) -> pd.DataFrame:
+    """Apply previously fitted per-regime normalization statistics."""
+
+    required = set(stats.feature_cols) | {stats.regime_col}
+    missing = required - set(df.columns)
+
+    if missing:
+        raise ValueError(
+            f"df is missing required column(s): {sorted(missing)}"
+        )
+
+    result = df.copy()
+
+    unknown_regimes = set(
+        int(x)
+        for x in result[stats.regime_col].dropna().unique()
+    ) - set(stats.regimes)
+
+    if unknown_regimes:
+        raise ValueError(
+            "Encountered regime(s) not present in fitted training "
+            f"statistics: {sorted(unknown_regimes)}"
+        )
+
+    for regime in stats.regimes:
+        mask = result[stats.regime_col] == regime
+
+        if not mask.any():
+            continue
+
+        values = result.loc[
+            mask, list(stats.feature_cols)
+        ].to_numpy(dtype=float)
+
+        normalized = (
+            values - stats.means[regime]
+        ) / stats.stds[regime]
+
+        result.loc[
+            mask, list(stats.feature_cols)
+        ] = normalized
+
+    return result
+
+
+__all__ = [
+    "NormalizationStats",
+    "RegimeNormalizationStats",
+    "fit_normalizer",
+    "transform",
+    "fit_regime_normalizer",
+    "transform_by_regime",
+]

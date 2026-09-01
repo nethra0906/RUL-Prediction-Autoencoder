@@ -1,6 +1,6 @@
 {
   "experiment_id": "fd001_ae_fixed_v001",
-  "timestamp": "2026-08-31T05:22:26.293382+00:00",
+  "timestamp": "2026-08-31T17:54:06.046522+00:00",
   "dataset": "FD001",
   "split": {
     "val_frac": 0.15,
@@ -22,7 +22,7 @@
     ]
   },
   "training": {
-    "epochs": 100,
+    "epochs": 5,
     "batch_size": 128,
     "learning_rate": 0.001,
     "seed": 42,
@@ -37,24 +37,24 @@
   },
   "n_train_windows": 12619,
   "n_val_windows": 1967,
-  "final_train_loss": 0.2967157442016716,
-  "final_val_loss": 0.3014315366744995,
-  "best_epoch": 99,
+  "final_train_loss": 0.32823382504476273,
+  "final_val_loss": 0.3303734362125397,
+  "best_epoch": 4,
   "stopped_early": false,
-  "threshold_value": 0.4189397777729439,
-  "threshold_mean": 0.2962181353278069,
-  "threshold_std": 0.0490886569780548,
-  "val_alert_rate": 0.026944585663446874,
+  "threshold_value": 0.5003302323651849,
+  "threshold_mean": 0.32696055972152926,
+  "threshold_std": 0.06934786905746226,
+  "val_alert_rate": 0.011184544992374174,
   "test_evaluation": {
     "n_test_windows": 10196,
     "precision": 0.0,
     "recall": 0.0,
     "f1": 0.0,
-    "roc_auc": 0.2891840483276478,
-    "false_alarm_rate": 0.06470172605228626,
-    "detection_rate": 0.32,
-    "mean_lead_time": 177.625,
+    "roc_auc": 0.40429035008275926,
+    "false_alarm_rate": 0.04986373271424246,
+    "detection_rate": 0.28,
+    "mean_lead_time": 176.85714285714286,
     "n_engines": 100
   },
-  "checkpoint_path": "results/checkpoints/fd001_ae_fixed_v001.pt"
+  "checkpoint_path": "results\\checkpoints\\fd001_ae_fixed_v001.pt"
 }
