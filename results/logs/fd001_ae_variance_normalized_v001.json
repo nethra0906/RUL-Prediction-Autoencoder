@@ -1,0 +1,79 @@
+{
+  "experiment_id": "fd001_ae_variance_normalized_v001",
+  "timestamp": "2026-09-03T04:34:11.296531+00:00",
+  "dataset": "FD001",
+  "scoring_method": "variance_normalized_reconstruction_error",
+  "window": {
+    "size": 30,
+    "stride": 1
+  },
+  "healthy_region": {
+    "healthy_frac": 0.85
+  },
+  "model": {
+    "latent_dim": 16,
+    "hidden_dims": [
+      64,
+      32
+    ]
+  },
+  "training": {
+    "epochs": 100,
+    "batch_size": 128,
+    "learning_rate": 0.001,
+    "seed": 42
+  },
+  "threshold": {
+    "method": "fixed",
+    "lambda": 2.5
+  },
+  "n_train_windows": 12619,
+  "n_val_windows": 1967,
+  "final_train_loss": 0.2962785537845218,
+  "final_val_loss": 0.30131039023399353,
+  "best_epoch": 98,
+  "threshold_value": -0.17921732333063295,
+  "selected_lambda": 2.0,
+  "lambda_sweep": [
+    {
+      "lambda": 0.5,
+      "threshold": -0.3655904002557809,
+      "val_alert_rate": 0.3777325876970005
+    },
+    {
+      "lambda": 1.0,
+      "threshold": -0.30346604128073157,
+      "val_alert_rate": 0.21453990849008642
+    },
+    {
+      "lambda": 1.5,
+      "threshold": -0.24134168230568226,
+      "val_alert_rate": 0.08642602948652771
+    },
+    {
+      "lambda": 2.0,
+      "threshold": -0.17921732333063295,
+      "val_alert_rate": 0.026944585663446874
+    },
+    {
+      "lambda": 2.5,
+      "threshold": -0.11709296435558364,
+      "val_alert_rate": 0.0
+    }
+  ],
+  "val_alert_rate": 0.026944585663446874,
+  "test_evaluation": {
+    "n_test_windows": 10196,
+    "precision": 0.6813725490196079,
+    "recall": 0.4809688581314879,
+    "f1": 0.563894523326572,
+    "roc_auc": 0.9673136641352816,
+    "false_alarm_rate": 0.006561017462400323,
+    "detection_rate": 0.18,
+    "mean_lead_time": 26.055555555555557,
+    "n_engines": 100
+  },
+  "sanity_corr_variance_vs_normalized_score": 0.9013159591596557,
+  "sanity_corr_score_vs_label_after_flip": 0.2686515069858174,
+  "checkpoint_path": "results/checkpoints/fd001_ae_variance_normalized_v001.pt"
+}
