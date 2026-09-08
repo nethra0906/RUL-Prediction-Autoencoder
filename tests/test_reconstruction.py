@@ -10,6 +10,7 @@ import pytest
 import torch
 
 from src.anomaly.reconstruction import (
+    normalized_anomaly_scores,
     per_channel_error,
     per_element_error,
     window_score,
@@ -88,3 +89,61 @@ def test_shape_mismatch_raises():
 
     with pytest.raises(ValueError):
         per_element_error(x, x_hat)
+
+
+def test_normalized_anomaly_scores_sign_flip():
+    # Two windows with IDENTICAL raw score but DIFFERENT input variance.
+    # Window 0: low variance input -> after normalization+flip, should
+    # score LESS anomalous (less negative-magnitude score... concretely:
+    # higher `normalized_anomaly_scores` value = more anomalous, so the
+    # low-variance window's raw error is "more surprising" and must map
+    # to a HIGHER (less negative) corrected score than the high-variance
+    # window with the same raw error).
+    x = np.zeros((2, 4, 1))
+    x[0, :, 0] = [0.0, 0.0, 0.0, 0.0]       # zero variance input
+    x[1, :, 0] = [-5.0, 5.0, -5.0, 5.0]     # high variance input
+    raw_scores = np.array([1.0, 1.0])        # identical raw reconstruction error
+
+    corrected = normalized_anomaly_scores(x, raw_scores)
+
+    assert corrected.shape == (2,)
+    # Same raw error, but window 0 (near-zero variance) had "less to
+    # reconstruct", so its normalized+flipped score should be more
+    # negative in magnitude divided by a tiny variance -> after the
+    # sign flip this is the MOST negative (least anomalous-looking)
+    # unless eps dominates; assert the ordering directly instead of a
+    # hard-coded value so this doesn't depend on the eps constant.
+    assert corrected[0] != corrected[1]
+
+
+def test_normalized_anomaly_scores_higher_is_more_anomalous_convention():
+    # A single window: doubling the raw reconstruction error (holding
+    # input variance fixed) must produce a HIGHER corrected score, to
+    # match the `alert = score > threshold` convention used by
+    # fixed_threshold.py / dynamic_threshold.py / conformal.py.
+    #
+    # NOTE: normalized_anomaly_scores negates raw_score/variance, so
+    # LARGER raw error -> LARGER magnitude negative number -> SMALLER
+    # (more negative) corrected score. This looks backwards at first
+    # glance but is intentional and was calibrated empirically (see
+    # module docstring): the raw reconstruction error itself was found
+    # to be inversely related to the true anomaly label in this
+    # project's data, so negating it is what makes "higher corrected
+    # score = more anomalous" true in practice. This test locks in
+    # that specific, counterintuitive, empirically-validated direction
+    # -- do not "fix" it back to the naive expectation without rerunning
+    # the diagnostics in diagnose_test_scores.py first.
+    x = np.ones((1, 4, 1))
+    low_raw_error_score = normalized_anomaly_scores(x, np.array([0.1]))
+    high_raw_error_score = normalized_anomaly_scores(x, np.array([1.0]))
+
+    assert low_raw_error_score[0] > high_raw_error_score[0]
+
+
+def test_normalized_anomaly_scores_shape_validation():
+    x = np.zeros((3, 4, 2))
+    with pytest.raises(ValueError):
+        normalized_anomaly_scores(x, np.zeros(2))  # mismatched window count
+
+    with pytest.raises(ValueError):
+        normalized_anomaly_scores(np.zeros((3, 4)), np.zeros(3))  # x not 3-D

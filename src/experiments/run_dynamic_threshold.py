@@ -9,9 +9,9 @@ import torch
 
 from src.anomaly.dynamic_threshold import (
     apply_dynamic_threshold,
-    fit_dynamic_threshold,
+    fit_dynamic_threshold_per_engine,
 )
-from src.anomaly.reconstruction import window_scores_numpy
+from src.anomaly.reconstruction import normalized_anomaly_scores, window_scores_numpy
 from src.data.healthy_region import select_healthy_region
 from src.data.loaders import load_test, load_test_rul, load_train
 from src.data.normalization import fit_normalizer, transform
@@ -185,6 +185,7 @@ def run_dynamic_threshold_experiment(
         train_X,
         train_recon,
     )
+    train_scores = normalized_anomaly_scores(train_windows.X, train_scores)
 
     with torch.no_grad():
         val_recon, _ = model(val_X)
@@ -193,10 +194,13 @@ def run_dynamic_threshold_experiment(
         val_X,
         val_recon,
     )
+    val_scores = normalized_anomaly_scores(val_windows.X, val_scores)
 
     # 7. Dynamic threshold on the healthy validation stream.
-    val_thresholds = fit_dynamic_threshold(
+    val_thresholds = fit_dynamic_threshold_per_engine(
         val_scores,
+        engine_ids=val_windows.engine_ids,
+        end_cycles=val_windows.end_cycles,
         window_size=threshold_window_size,
         lambda_=threshold_lambda,
     )
@@ -243,6 +247,7 @@ def run_dynamic_threshold_experiment(
             feature_cols=_FEATURE_COLS,
             label_cols=["is_anomalous"],
         )
+        
 
         if len(test_windows) == 0:
             summary["test_evaluation"] = {
@@ -263,11 +268,14 @@ def run_dynamic_threshold_experiment(
                 test_X,
                 test_recon,
             )
+            test_scores = normalized_anomaly_scores(test_windows.X, test_scores)
 
             # Dynamic threshold is generated sequentially from the
             # test score stream, without using test labels.
-            test_thresholds = fit_dynamic_threshold(
+            test_thresholds = fit_dynamic_threshold_per_engine(
                 test_scores,
+                engine_ids=test_windows.engine_ids,
+                end_cycles=test_windows.end_cycles,
                 window_size=threshold_window_size,
                 lambda_=threshold_lambda,
             )
@@ -283,6 +291,10 @@ def run_dynamic_threshold_experiment(
                 test_df,
                 test_rul,
             )
+            print(f"test_alerts.sum() = {test_alerts.sum()} / {len(test_alerts)}")
+            print(f"test_y_true.sum() = {test_y_true.sum()} / {len(test_y_true)}")
+            print(f"overlap (alert AND true) = {(test_alerts & test_y_true.astype(bool)).sum()}")
+            print(f"alerts on healthy = {(test_alerts & ~test_y_true.astype(bool)).sum()}")
 
             eval_result = evaluate_detection(
                 y_true=test_y_true,

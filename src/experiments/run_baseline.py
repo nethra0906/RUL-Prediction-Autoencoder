@@ -52,7 +52,7 @@ import torch
 
 from src.anomaly.delta_score import compute_expanding_delta_scores
 from src.anomaly.fixed_threshold import apply_fixed_threshold, fit_fixed_threshold
-from src.anomaly.reconstruction import window_scores_numpy
+from src.anomaly.reconstruction import normalized_anomaly_scores, window_scores_numpy
 from src.data.detrend import detrend_windows
 from src.data.healthy_region import select_healthy_region
 from src.data.loaders import load_test, load_test_rul, load_train
@@ -213,11 +213,13 @@ def run_baseline_experiment(
     with torch.no_grad():
         train_recon, _ = model(train_X)
     train_scores = window_scores_numpy(train_X, train_recon)
+    train_scores = normalized_anomaly_scores(train_X_np, train_scores)
     abs_threshold = fit_fixed_threshold(train_scores, lambda_=threshold_lambda)
 
     with torch.no_grad():
         val_recon, _ = model(val_X)
     val_scores = window_scores_numpy(val_X, val_recon)
+    val_scores = normalized_anomaly_scores(val_X_np, val_scores)
     val_alerts_abs = apply_fixed_threshold(val_scores, abs_threshold)
 
     # 6b. Delta scoring: reframe train/val absolute scores relative to
@@ -277,6 +279,7 @@ def run_baseline_experiment(
             with torch.no_grad():
                 test_recon, _ = model(test_X)
             test_scores = window_scores_numpy(test_X, test_recon)
+            test_scores = normalized_anomaly_scores(test_X_np, test_scores)
             test_alerts_abs = apply_fixed_threshold(test_scores, abs_threshold)
             test_y_true = test_windows.y.flatten()
 

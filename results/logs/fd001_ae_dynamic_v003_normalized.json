@@ -1,0 +1,64 @@
+{
+  "experiment_id": "fd001_ae_dynamic_v003_normalized",
+  "timestamp": "2026-09-03T06:42:30.186328+00:00",
+  "dataset": "FD001",
+  "split": {
+    "val_frac": 0.15,
+    "seed": 42
+  },
+  "healthy_region": {
+    "healthy_frac": 0.85
+  },
+  "window": {
+    "size": 30,
+    "stride": 1
+  },
+  "model": {
+    "type": "baseline_autoencoder",
+    "latent_dim": 16,
+    "hidden_dims": [
+      64,
+      32
+    ]
+  },
+  "training": {
+    "epochs": 100,
+    "batch_size": 128,
+    "learning_rate": 0.001,
+    "seed": 42,
+    "early_stopping_patience": 10
+  },
+  "threshold": {
+    "method": "dynamic",
+    "window_size": 30,
+    "lambda": 2.5
+  },
+  "evaluation": {
+    "persistence": 1
+  },
+  "n_train_windows": 12619,
+  "n_val_windows": 1967,
+  "final_train_loss": 0.29360185643744097,
+  "final_val_loss": 0.2982298731803894,
+  "best_epoch": 99,
+  "stopped_early": false,
+  "val_alert_rate": 0.03660396542958821,
+  "val_threshold_mean": -0.30329237120372293,
+  "val_threshold_min": -0.5998722202560584,
+  "val_threshold_max": 0.18082854145588073,
+  "test_evaluation": {
+    "n_test_windows": 10196,
+    "precision": 0.007978723404255319,
+    "recall": 0.010380622837370242,
+    "f1": 0.009022556390977444,
+    "roc_auc": 0.9650154743613879,
+    "false_alarm_rate": 0.03765014636115878,
+    "detection_rate": 0.69,
+    "mean_lead_time": 144.20289855072463,
+    "n_engines": 100,
+    "threshold_mean": -0.33598723031799427,
+    "threshold_min": -0.6224808838429039,
+    "threshold_max": 0.21000799944416132
+  },
+  "checkpoint_path": "results/checkpoints/fd001_ae_dynamic_v003_normalized.pt"
+}

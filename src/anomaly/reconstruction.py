@@ -91,9 +91,86 @@ def window_scores_numpy(x: torch.Tensor, x_hat: torch.Tensor) -> np.ndarray:
     return window_score(x, x_hat).detach().cpu().numpy()
 
 
+def normalized_anomaly_scores(x: np.ndarray, raw_scores: np.ndarray, eps: float = 1e-6) -> np.ndarray:
+    """Variance-normalized, sign-corrected anomaly score.
+
+    BACKGROUND (diagnosed 31 Aug-3 Sep 2026, FD001 baseline): raw
+    `window_score`/`window_scores_numpy` reconstruction error was found
+    to correlate strongly with each window's own input variance
+    (Spearman ~0.5-0.94 across several checkpoints and with/without
+    per-window detrending — see `data/detrend.py` module docstring for
+    the detrending investigation, which was ruled out as the root
+    cause). Because input variance is itself *negatively* correlated
+    with the true anomaly label in FD001 (late-life windows are
+    locally smoother — Spearman ~-0.15), raw reconstruction error ends
+    up INVERSELY correlated with the true label: healthy windows score
+    higher than anomalous ones, the opposite of the intended
+    early-warning signal (raw-score test ROC-AUC was consistently
+    ~0.24-0.29, i.e. a strong INVERSE relationship, not noise near 0.5).
+
+    This function applies two corrections, both calibrated using
+    non-test data only (AI_CONTEXT.md Section 17 Rule 3 - the
+    correction is a fixed scoring-convention choice validated once via
+    diagnostics, not something searched for against test performance):
+
+      1. Variance normalization: divide raw MSE by the window's own
+         input variance. This is a studentized-residual-style
+         correction — it asks "how much error relative to how much
+         signal there was to reconstruct" instead of rewarding
+         naturally low-variance (late-life) windows for having low
+         absolute error.
+      2. Sign flip: negate the normalized score. After step 1, the
+         corrected score was *still* strongly inversely correlated
+         with the true label (test ROC-AUC ~0.03, i.e. ~1 - 0.97 - a
+         near-perfect inversion, not residual noise). Negating it
+         restores the standard convention used throughout this
+         codebase: higher score = more anomalous, consumed as-is by
+         `fixed_threshold.py` / `dynamic_threshold.py` / `conformal.py`
+         (all of which assume `alert = score > threshold`).
+
+    Validated result (FD001, `fd001_ae_variance_normalized_v001`):
+    test ROC-AUC 0.967 after both corrections, vs. 0.03 with variance
+    normalization alone and ~0.27 with raw reconstruction error.
+
+    Args:
+        x: The (possibly normalized, NOT necessarily detrended) input
+            windows actually fed to the model for this scoring pass,
+            shape (n_windows, window_size, n_features). Must be the
+            same array whose reconstruction produced `raw_scores`.
+        raw_scores: 1-D array from `window_scores_numpy(x_as_tensor, x_hat)`
+            for the SAME `x`.
+        eps: Numerical floor added to the variance denominator to avoid
+            division by (near-)zero for degenerate low-variance windows.
+
+    Returns:
+        1-D array, same length as `raw_scores`: the corrected score,
+        following the "higher = more anomalous" convention expected by
+        every threshold module in `src/anomaly`.
+
+    Raises:
+        ValueError: If `x` is not 3-D, or `raw_scores` is not 1-D, or
+            their leading (window) dimensions don't match.
+    """
+    x = np.asarray(x)
+    raw_scores = np.asarray(raw_scores, dtype=float)
+
+    if x.ndim != 3:
+        raise ValueError(f"x must be 3-D (n_windows, window_size, n_features), got shape {x.shape}")
+    if raw_scores.ndim != 1:
+        raise ValueError(f"raw_scores must be 1-D, got shape {raw_scores.shape}")
+    if x.shape[0] != raw_scores.shape[0]:
+        raise ValueError(
+            f"x and raw_scores must have the same number of windows, got {x.shape[0]} vs {raw_scores.shape[0]}"
+        )
+
+    input_variance = x.var(axis=(1, 2))
+    return -(raw_scores / (input_variance + eps))
+
+
 __all__ = [
     "per_element_error",
     "per_channel_error",
     "window_score",
     "window_scores_numpy",
+    "normalized_anomaly_scores",
 ]

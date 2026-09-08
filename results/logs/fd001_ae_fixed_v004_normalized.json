@@ -1,0 +1,74 @@
+{
+  "experiment_id": "fd001_ae_fixed_v004_normalized",
+  "timestamp": "2026-09-03T06:33:36.889183+00:00",
+  "dataset": "FD001",
+  "split": {
+    "val_frac": 0.15,
+    "seed": 42
+  },
+  "healthy_region": {
+    "healthy_frac": 0.85
+  },
+  "window": {
+    "size": 30,
+    "stride": 1
+  },
+  "detrend": false,
+  "model": {
+    "type": "baseline_autoencoder",
+    "latent_dim": 16,
+    "hidden_dims": [
+      64,
+      32
+    ]
+  },
+  "training": {
+    "epochs": 100,
+    "batch_size": 128,
+    "learning_rate": 0.001,
+    "seed": 42,
+    "early_stopping_patience": 10
+  },
+  "threshold": {
+    "method": "fixed",
+    "lambda_absolute": 2.5,
+    "lambda_delta": 2.5,
+    "delta_baseline_window": null
+  },
+  "evaluation": {
+    "persistence": 1
+  },
+  "n_train_windows": 12619,
+  "n_val_windows": 1967,
+  "final_train_loss": 0.300496522492185,
+  "final_val_loss": 0.3053573966026306,
+  "best_epoch": 98,
+  "stopped_early": false,
+  "threshold_value_absolute": -0.12307633357930042,
+  "threshold_value_delta": 0.2554911630953817,
+  "val_alert_rate_absolute": 0.0,
+  "val_alert_rate_delta": 0.019318759532282664,
+  "test_evaluation_absolute": {
+    "n_test_windows": 10196,
+    "precision": 1.0,
+    "recall": 0.08304498269896193,
+    "f1": 0.15335463258785942,
+    "roc_auc": 0.9693285967805085,
+    "false_alarm_rate": 0.0,
+    "detection_rate": 0.07,
+    "mean_lead_time": 20.0,
+    "n_engines": 100
+  },
+  "test_evaluation_delta": {
+    "n_test_windows": 10196,
+    "precision": 0.8089171974522293,
+    "recall": 0.43944636678200694,
+    "f1": 0.5695067264573991,
+    "roc_auc": 0.9750223794087785,
+    "false_alarm_rate": 0.003028161905723226,
+    "detection_rate": 0.15,
+    "mean_lead_time": 27.2,
+    "n_engines": 100
+  },
+  "checkpoint_path": "results/checkpoints/fd001_ae_fixed_v004_normalized.pt"
+}

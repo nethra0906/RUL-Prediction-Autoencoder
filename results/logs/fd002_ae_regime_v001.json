@@ -1,0 +1,82 @@
+{
+  "experiment_id": "fd002_ae_regime_v001",
+  "dataset": "FD002",
+  "window": {
+    "size": 30,
+    "stride": 1
+  },
+  "model": {
+    "type": "regime_conditioned_autoencoder",
+    "latent_dim": 16,
+    "hidden_dims": [
+      64,
+      32
+    ],
+    "regime_hidden_dims": [
+      16
+    ],
+    "regime_embedding_dim": 8,
+    "n_regimes": 6
+  },
+  "training": {
+    "epochs": 100,
+    "batch_size": 128,
+    "learning_rate": 0.001,
+    "seed": 42,
+    "early_stopping_patience": 10
+  },
+  "normalization": {
+    "method": "per_regime_zscore"
+  },
+  "threshold": {
+    "method": "fixed",
+    "selected_lambda": 2.0,
+    "value": -0.46094283058980146,
+    "sweep": [
+      {
+        "lambda": 0.5,
+        "threshold": -0.6654800174985427,
+        "val_alert_rate": 0.2997314234556849
+      },
+      {
+        "lambda": 1.0,
+        "threshold": -0.597300955195629,
+        "val_alert_rate": 0.18263205013428827
+      },
+      {
+        "lambda": 1.5,
+        "threshold": -0.5291218928927152,
+        "val_alert_rate": 0.08540734109221128
+      },
+      {
+        "lambda": 2.0,
+        "threshold": -0.46094283058980146,
+        "val_alert_rate": 0.0288272157564906
+      },
+      {
+        "lambda": 2.5,
+        "threshold": -0.39276376828688775,
+        "val_alert_rate": 0.003939122649955237
+      }
+    ]
+  },
+  "n_train_windows": 32442,
+  "n_val_windows": 5585,
+  "final_train_loss": 0.5237498134163333,
+  "final_val_loss": 0.5223827958106995,
+  "best_epoch": 98,
+  "stopped_early": false,
+  "val_alert_rate": 0.0288272157564906,
+  "test_evaluation": {
+    "n_test_windows": 26505,
+    "precision": 0.7112676056338029,
+    "recall": 0.6613657623947614,
+    "f1": 0.6854095976732913,
+    "roc_auc": 0.9553718785172375,
+    "false_alarm_rate": 0.01128322063217487,
+    "detection_rate": 0.25691699604743085,
+    "mean_lead_time": 52.50769230769231,
+    "n_engines": 253
+  },
+  "checkpoint_path": "results/checkpoints/fd002_ae_regime_v001.pt"
+}
