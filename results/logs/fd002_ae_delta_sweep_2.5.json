@@ -1,0 +1,74 @@
+{
+  "experiment_id": "fd002_ae_delta_sweep_2.5",
+  "timestamp": "2026-09-13T10:07:01.881486+00:00",
+  "dataset": "FD002",
+  "split": {
+    "val_frac": 0.15,
+    "seed": 42
+  },
+  "healthy_region": {
+    "healthy_frac": 0.85
+  },
+  "window": {
+    "size": 30,
+    "stride": 1
+  },
+  "detrend": false,
+  "model": {
+    "type": "baseline_autoencoder",
+    "latent_dim": 16,
+    "hidden_dims": [
+      64,
+      32
+    ]
+  },
+  "training": {
+    "epochs": 100,
+    "batch_size": 128,
+    "learning_rate": 0.001,
+    "seed": 42,
+    "early_stopping_patience": 10
+  },
+  "threshold": {
+    "method": "fixed",
+    "lambda_absolute": 2.5,
+    "lambda_delta": 2.5,
+    "delta_baseline_window": null
+  },
+  "evaluation": {
+    "persistence": 1
+  },
+  "n_train_windows": 32442,
+  "n_val_windows": 5585,
+  "final_train_loss": 0.42509566214667993,
+  "final_val_loss": 0.4350070357322693,
+  "best_epoch": 99,
+  "stopped_early": false,
+  "threshold_value_absolute": -0.227753526735045,
+  "threshold_value_delta": 0.20376396482275375,
+  "val_alert_rate_absolute": 0.0007162041181736795,
+  "val_alert_rate_delta": 0.001253357206803939,
+  "test_evaluation_absolute": {
+    "n_test_windows": 26505,
+    "precision": 0.4,
+    "recall": 0.0018709073900841909,
+    "f1": 0.0037243947858473002,
+    "roc_auc": 0.5019657546569309,
+    "false_alarm_rate": 0.00011794307281019028,
+    "detection_rate": 0.019762845849802372,
+    "mean_lead_time": 99.6,
+    "n_engines": 253
+  },
+  "test_evaluation_delta": {
+    "n_test_windows": 26505,
+    "precision": 0.10344827586206896,
+    "recall": 0.002806361085126286,
+    "f1": 0.00546448087431694,
+    "roc_auc": 0.502313589263304,
+    "false_alarm_rate": 0.0010221732976883158,
+    "detection_rate": 0.09486166007905138,
+    "mean_lead_time": 134.0,
+    "n_engines": 253
+  },
+  "checkpoint_path": "results/checkpoints/fd002_ae_delta_sweep_2.5.pt"
+}
